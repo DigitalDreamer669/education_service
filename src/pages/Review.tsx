@@ -12,7 +12,7 @@ import './Review.css';
 export default function Review() {
   const { subject } = useParams();
   const config = getSubject(subject);
-  const { questions, loading: questionsLoading, error: questionsError } = useQuestions(config?.slug);
+  const { questions } = useQuestions(config?.slug);
 
   // Server-side progress
   const [progressResults, setProgressResults] = useState<Record<number, QuestionResult>>({});
@@ -33,7 +33,7 @@ export default function Review() {
 
     // Load server progress
     import('../lib/serverProgress').then(({ loadReviewProgress }) => {
-      loadReviewProgress(config.slug).then((data) => {
+      loadReviewProgress(cfg.slug).then((data) => {
         setProgressResults(data);
         setProgressLoading(false);
       }).catch(() => {
@@ -44,11 +44,14 @@ export default function Review() {
 
     // Load bookmarks for this subject
     import('../lib/serverProgress').then(({ loadBookmarks }) => {
-      loadBookmarks(config.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
+      loadBookmarks(cfg.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
     });
   }, [config, questions]);
 
   if (!config) return <Navigate to="/" replace />;
+
+  // Capture config so TypeScript knows it's non-null inside async callbacks
+  const cfg = config;
 
   const progressItems = order.map((q) => ({
     id: q.id,
@@ -65,7 +68,7 @@ export default function Review() {
 
     // Save to server (non-blocking — don't block UI on failure)
     import('../lib/serverProgress').then(({ saveReviewResult }) => {
-      saveReviewResult(config.slug, current.id, result).catch(() => {
+      saveReviewResult(cfg.slug, current.id, result).catch(() => {
         setProgressError('Не удалось сохранить ответ');
       });
     });
@@ -73,7 +76,7 @@ export default function Review() {
     // Auto-bookmark incorrect answers
     if (!correct && !bookmarkedIds.includes(current.id)) {
       import('../lib/serverProgress').then(({ toggleBookmark }) => {
-        toggleBookmark(config.slug, current.id).then((ok) => {
+        toggleBookmark(cfg.slug, current.id).then((ok) => {
           if (ok) setBookmarkedIds((prev) => [...prev, current.id]);
         });
       });
@@ -89,7 +92,7 @@ export default function Review() {
 
   async function handleToggleBookmark(questionId: number) {
     const ok = await import('../lib/serverProgress').then(
-      ({ toggleBookmark }) => toggleBookmark(config.slug, questionId)
+      ({ toggleBookmark }) => toggleBookmark(cfg.slug, questionId)
     );
     if (ok) {
       setBookmarkedIds((prev) =>

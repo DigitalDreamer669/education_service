@@ -2,13 +2,6 @@ import { supabase } from './supabase';
 
 export type QuestionResult = 'correct' | 'incorrect';
 
-interface UserProgressRow {
-  user_id: string;
-  question_id: number;
-  result: QuestionResult;
-  answered_at: string;
-}
-
 export interface ExamAttempt {
   id: number;
   subject: string;
@@ -55,7 +48,7 @@ export async function saveReviewResult(
     .from('user_progress')
     .upsert(
       { user_id: user.user.id, subject, question_id: questionId, result },
-      { on_conflict: 'user_id,subject,question_id' }
+      { onConflict: 'user_id,subject,question_id' }
     );
 
   if (error) {

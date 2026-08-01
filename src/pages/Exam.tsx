@@ -38,6 +38,9 @@ export default function Exam() {
 
   if (!config) return <Navigate to="/" replace />;
 
+  // Capture config so TypeScript knows it's non-null inside async callbacks
+  const cfg = config;
+
   useEffect(() => {
     import('../lib/serverProgress').then(({ loadExamHistory }) => {
       loadExamHistory().then((data) => {
@@ -68,7 +71,7 @@ export default function Exam() {
     // Auto-bookmark incorrect answers
     if (!correct && !bookmarkedIds.includes(attempts[currentIndex]?.question.id)) {
       import('../lib/serverProgress').then(({ toggleBookmark }) => {
-        toggleBookmark(config.slug, attempts[currentIndex].question.id).then((ok) => {
+        toggleBookmark(cfg.slug, attempts[currentIndex].question.id).then((ok) => {
           if (ok) setBookmarkedIds((prev) => [...prev, attempts[currentIndex].question.id]);
         });
       });
@@ -89,7 +92,7 @@ export default function Exam() {
 
   async function handleToggleBookmark(questionId: number) {
     const ok = await import('../lib/serverProgress').then(
-      ({ toggleBookmark }) => toggleBookmark(config.slug, questionId)
+      ({ toggleBookmark }) => toggleBookmark(cfg.slug, questionId)
     );
     if (ok) {
       setBookmarkedIds((prev) =>

@@ -44,7 +44,8 @@ export function extractMermaid(): (tree: any) => void {
         value: node.value,
       };
 
-      // rehype-react will render this as <div class="mermaid-placeholder" data-mermaid-id="...">
+      // Replace the code block with our placeholder in the AST
+      Object.assign(node, placeholder);
     });
   };
 }

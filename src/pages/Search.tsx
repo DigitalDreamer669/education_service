@@ -19,15 +19,18 @@ export default function Search() {
 
   if (!config) return <Navigate to="/" replace />;
 
+  // Capture config so TypeScript knows it's non-null inside async callbacks
+  const cfg = config;
+
   useEffect(() => {
     import('../lib/serverProgress').then(({ loadBookmarks }) => {
-      loadBookmarks(config.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
+      loadBookmarks(cfg.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
     });
   }, [config]);
 
   async function handleToggleBookmark(questionId: number) {
     const ok = await import('../lib/serverProgress').then(
-      ({ toggleBookmark }) => toggleBookmark(config.slug, questionId)
+      ({ toggleBookmark }) => toggleBookmark(cfg.slug, questionId)
     );
     if (ok) {
       setBookmarkedIds((prev) =>
