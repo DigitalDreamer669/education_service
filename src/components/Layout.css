@@ -76,6 +76,19 @@
   color: var(--text);
 }
 
+.topbar__auth {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar__user {
+  font-size: 14px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
 .content {
   flex: 1;
   padding-top: 40px;

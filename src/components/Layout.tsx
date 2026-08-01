@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import './Layout.css';
 
 interface LayoutProps {
@@ -8,6 +9,14 @@ interface LayoutProps {
 }
 
 export function Layout({ children, crumbs }: LayoutProps) {
+  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    await logout();
+    navigate('/login', { replace: true });
+  }
+
   return (
     <div className="layout">
       <header className="topbar">
@@ -16,6 +25,7 @@ export function Layout({ children, crumbs }: LayoutProps) {
             <span className="topbar__mark">01</span>
             <span>Подготовка к экзамену</span>
           </Link>
+
           {crumbs && crumbs.length > 0 && (
             <nav className="crumbs" aria-label="Навигация">
               {crumbs.map((c, i) => (
@@ -26,9 +36,28 @@ export function Layout({ children, crumbs }: LayoutProps) {
               ))}
             </nav>
           )}
+
+          <div className="topbar__auth">
+            {user ? (
+              <>
+                <span className="topbar__user">
+                  {profile?.display_name || 'Пользователь'}
+                </span>
+                <button onClick={handleLogout} className="btn btn--ghost" style={{ padding: '4px 10px', fontSize: '13px' }}>
+                  Выйти
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="btn btn--primary" style={{ padding: '4px 12px', fontSize: '13px' }}>
+                Войти
+              </Link>
+            )}
+          </div>
         </div>
       </header>
+
       <main className="content container">{children}</main>
+
       <footer className="footer container">
         <span>Данные — из Supabase · прогресс режима «Повторение» хранится локально в этом браузере</span>
       </footer>
