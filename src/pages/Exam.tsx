@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { QuestionCard } from '../components/QuestionCard';
@@ -7,7 +7,7 @@ import { ProgressGraph } from '../components/ProgressGraph';
 import { useQuestions } from '../hooks/useQuestions';
 import { getSubject } from '../config/subjects';
 import { shuffle } from '../lib/parse';
-import type { Question } from '../types';
+import type { Question, ExamAttempt } from '../types';
 import './Exam.css';
 
 type Phase = 'setup' | 'running' | 'finished';
@@ -28,7 +28,24 @@ export default function Exam() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionKey, setSessionKey] = useState(0);
 
+  // Exam history (loaded from server)
+  const [examHistory, setExamHistory] = useState<ExamAttempt[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
   if (!config) return <Navigate to="/" replace />;
+
+  // Load exam history on mount
+  useEffect(() => {
+    import('../lib/serverProgress').then(({ loadExamHistory }) => {
+      loadExamHistory().then((data) => {
+        setExamHistory(data);
+      }).catch(() => {
+        // silently ignore — history is optional
+      }).finally(() => {
+        setHistoryLoading(false);
+      });
+    });
+  }, []);
 
   function startExam() {
     const pool = shuffle(questions).slice(0, config!.exam.questionCount);
@@ -68,6 +85,27 @@ export default function Exam() {
     id: a.question.id,
     state: (a.result ?? 'pending') as 'pending' | 'correct' | 'incorrect',
   }));
+
+  async function saveExamResult() {
+    if (!config || score === undefined) return;
+    const ok = await import('../lib/serverProgress').then(
+      ({ saveExamAttempt }) => saveExamAttempt(config.slug, score, attempts.length)
+    );
+    if (ok) {
+      // Reload history
+      const { loadExamHistory } = await import('../lib/serverProgress');
+      setExamHistory(await loadExamHistory());
+    }
+  }
+
+  function formatTime(iso: string): string {
+    return new Date(iso).toLocaleDateString('ru-RU', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
 
   if (phase === 'setup') {
     return (
@@ -174,6 +212,42 @@ export default function Exam() {
           />
         ))}
       </div>
+
+      {/* История экзаменов */}
+      <div className="exam-history">
+        <h2>История экзаменов</h2>
+        {historyLoading && <p className="hint">Загружаем…</p>}
+        {!historyLoading && examHistory.length === 0 && (
+          <p className="hint">Пока нет попыток.</p>
+        )}
+        {!historyLoading && examHistory.length > 0 && (
+          <table className="exam-history__table">
+            <thead>
+              <tr>
+                <th>Дата</th>
+                <th>Результат</th>
+                <th>%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {examHistory.map((a) => (
+                <tr key={a.id}>
+                  <td className="mono">{formatTime(a.started_at)}</td>
+                  <td>{a.score} / {a.total_questions}</td>
+                  <td className="mono">
+                    {Math.round((a.score / a.total_questions) * 100)}%
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Save button — save result after user clicks */}
+      <button className="btn btn--ghost" onClick={saveExamResult}>
+        Сохранить результат
+      </button>
     </Layout>
   );
 }

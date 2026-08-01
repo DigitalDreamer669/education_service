@@ -6,40 +6,60 @@ import { ProgressGraph } from '../components/ProgressGraph';
 import { useQuestions } from '../hooks/useQuestions';
 import { getSubject } from '../config/subjects';
 import { shuffle } from '../lib/parse';
-import { loadProgress, resetProgress, saveResult, type QuestionResult } from '../lib/progress';
-import type { Question } from '../types';
+import type { Question, QuestionResult } from '../types';
 import './Review.css';
 
 export default function Review() {
   const { subject } = useParams();
   const config = getSubject(subject);
-  const { questions, loading, error } = useQuestions(config?.slug);
+  const { questions, loading: questionsLoading, error: questionsError } = useQuestions(config?.slug);
 
+  // Server-side progress
+  const [progressResults, setProgressResults] = useState<Record<number, QuestionResult>>({});
+  const [progressLoading, setProgressLoading] = useState(true);
+  const [progressError, setProgressError] = useState<string | null>(null);
+
+  // Local state for current session
   const [order, setOrder] = useState<Question[]>([]);
-  const [results, setResults] = useState<Record<number, QuestionResult>>({});
   const [currentId, setCurrentId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!config || questions.length === 0) return;
     setOrder(shuffle(questions));
-    setResults(loadProgress(config.slug));
+
+    // Load server progress
+    import('../lib/serverProgress').then(({ loadReviewProgress }) => {
+      loadReviewProgress(config.slug).then((data) => {
+        setProgressResults(data);
+        setProgressLoading(false);
+      }).catch(() => {
+        setProgressError('Не удалось загрузить прогресс с сервера');
+        setProgressLoading(false);
+      });
+    });
   }, [config, questions]);
 
   if (!config) return <Navigate to="/" replace />;
 
   const progressItems = order.map((q) => ({
     id: q.id,
-    state: (results[q.id] ?? 'pending') as 'pending' | 'correct' | 'incorrect',
+    state: (progressResults[q.id] ?? 'pending') as 'pending' | 'correct' | 'incorrect',
   }));
 
   const currentIndex = currentId ? order.findIndex((q) => q.id === currentId) : -1;
   const current = currentIndex >= 0 ? order[currentIndex] : order[0];
 
-  function handleAnswered(correct: boolean) {
+  async function handleAnswered(correct: boolean) {
     if (!config || !current) return;
     const result: QuestionResult = correct ? 'correct' : 'incorrect';
-    saveResult(config.slug, current.id, result);
-    setResults((prev) => ({ ...prev, [current.id]: result }));
+    setProgressResults((prev) => ({ ...prev, [current.id]: result }));
+
+    // Save to server (non-blocking — don't block UI on failure)
+    import('../lib/serverProgress').then(({ saveReviewResult }) => {
+      saveReviewResult(config.slug, current.id, result).catch(() => {
+        setProgressError('Не удалось сохранить ответ');
+      });
+    });
   }
 
   function goNext() {
@@ -50,24 +70,22 @@ export default function Review() {
   }
 
   function handleReset() {
-    if (!config) return;
-    resetProgress(config.slug);
-    setResults({});
+    setProgressResults({});
     setOrder(shuffle(questions));
     setCurrentId(null);
   }
 
   const doneCount = useMemo(
-    () => order.filter((q) => results[q.id]).length,
-    [order, results]
+    () => order.filter((q) => progressResults[q.id]).length,
+    [order, progressResults]
   );
 
   return (
     <Layout crumbs={[{ label: config.shortName, to: `/${config.slug}` }, { label: 'Повторение' }]}>
-      {loading && <p className="hint">Загружаем вопросы…</p>}
-      {error && <p className="hint hint--error">Ошибка загрузки: {error}</p>}
+      {progressLoading && <p className="hint">Загружаем прогресс…</p>}
+      {progressError && <p className="hint hint--error">{progressError}</p>}
 
-      {!loading && !error && order.length > 0 && current && (
+      {!progressLoading && order.length > 0 && current && (
         <>
           <div className="review-head">
             <span className="eyebrow">{config.name}</span>

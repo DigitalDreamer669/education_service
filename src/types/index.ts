@@ -64,6 +64,8 @@ export type SubjectSlug =
   | 'business-informatics'
   | 'technology_entrepreneurship_and_it_leadership';
 
+export type QuestionResult = 'correct' | 'incorrect';
+
 export interface SubjectConfig {
   slug: SubjectSlug;
   name: string;
@@ -73,4 +75,13 @@ export interface SubjectConfig {
     questionCount: number;
     minutes: number;
   };
+}
+
+export interface ExamAttempt {
+  id: number;
+  subject: string;
+  score: number;
+  total_questions: number;
+  started_at: string;
+  finished_at: string | null;
 }

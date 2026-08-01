@@ -90,3 +90,35 @@
   font-size: 20px;
   margin-bottom: 4px;
 }
+
+.exam-history {
+  margin-top: 36px;
+}
+
+.exam-history h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.exam-history__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.exam-history__table th,
+.exam-history__table td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.exam-history__table th {
+  color: var(--text-faint);
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.exam-history__table td {
+  color: var(--text);
+}
