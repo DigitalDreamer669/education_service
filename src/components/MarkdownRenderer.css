@@ -109,3 +109,40 @@
 .md a {
   color: var(--accent);
 }
+
+/* ---- Mermaid diagram containers ---- */
+
+.mermaid-placeholder {
+  display: block;
+  margin: 1.5em 0;
+  text-align: center;
+  overflow-x: auto;
+}
+
+.mermaid-placeholder svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Fallback if mermaid rendering fails */
+.mermaid-fallback {
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--text-dim);
+}
+
+/* ---- Math blocks (KaTeX) ---- */
+
+.md .katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+}
+
+.md .katex-inline {
+  white-space: nowrap;
+}
