@@ -59,7 +59,7 @@ export function AuthContextProvider({ children }: AuthProviderProps) {
     });
 
     // Слушаем изменения auth состояния
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -68,7 +68,7 @@ export function AuthContextProvider({ children }: AuthProviderProps) {
       }
     });
 
-    return () => listener.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
   async function login(email: string, password: string) {
