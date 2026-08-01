@@ -1,0 +1,20 @@
+.review-head {
+  margin-bottom: 20px;
+}
+
+.review-head h1 {
+  font-size: 26px;
+  margin-top: 8px;
+}
+
+.review-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.review-nav__status {
+  color: var(--text-faint);
+  font-size: 13px;
+}

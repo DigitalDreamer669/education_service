@@ -1,0 +1,152 @@
+.qcard {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.qcard__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.qcard__index {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.qcard__badge {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--warn);
+  background: var(--warn-soft);
+  border: 1px solid rgba(255, 180, 84, 0.35);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+
+.qcard__text {
+  font-size: 17px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.qcard__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.qopt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.qopt:hover:not(:disabled) {
+  border-color: var(--accent-dim);
+}
+
+.qopt:disabled {
+  cursor: default;
+}
+
+.qopt__control {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--text-faint);
+  background: transparent;
+}
+
+.qopt--radio .qopt__control {
+  border-radius: 50%;
+}
+
+.qopt--checkbox .qopt__control {
+  border-radius: 4px;
+}
+
+.qopt__text {
+  flex: 1;
+}
+
+.qopt__mark {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.qopt--selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.qopt--selected .qopt__control {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.qopt--correct {
+  border-color: var(--correct);
+  background: var(--correct-soft);
+}
+
+.qopt--correct .qopt__control {
+  border-color: var(--correct);
+  background: var(--correct);
+}
+
+.qopt--correct .qopt__mark {
+  color: var(--correct);
+}
+
+.qopt--wrong {
+  border-color: var(--incorrect);
+  background: var(--incorrect-soft);
+}
+
+.qopt--wrong .qopt__control {
+  border-color: var(--incorrect);
+  background: var(--incorrect);
+}
+
+.qopt--wrong .qopt__mark {
+  color: var(--incorrect);
+}
+
+.qcard__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.qcard__result {
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 4px;
+}
+
+.qcard__result--ok {
+  color: var(--correct);
+}
+
+.qcard__result--fail {
+  color: var(--incorrect);
+}
+
+.qcard__result--skipped {
+  color: var(--text-faint);
+}

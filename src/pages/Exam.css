@@ -1,0 +1,92 @@
+.hint {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.hint--error {
+  color: var(--incorrect);
+}
+
+.exam-setup {
+  max-width: 560px;
+}
+
+.exam-setup h1 {
+  font-size: 32px;
+  margin: 10px 0 24px;
+}
+
+.exam-setup__facts {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 22px;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fact__value {
+  font-size: 26px;
+  color: var(--accent);
+}
+
+.fact__label {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.exam-setup__note {
+  color: var(--text-dim);
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin-bottom: 26px;
+}
+
+.exam-run__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.exam-run__progress {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.exam-run__nav {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.exam-result h1 {
+  font-size: 40px;
+  margin: 10px 0 8px;
+}
+
+.exam-result__pct {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+.exam-result__note {
+  color: var(--text-dim);
+  font-size: 14px;
+  margin-bottom: 22px;
+}
+
+.exam-review {
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.exam-review h2 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}

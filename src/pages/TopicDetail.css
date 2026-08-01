@@ -1,0 +1,47 @@
+.topic-detail__head {
+  margin-bottom: 22px;
+}
+
+.topic-detail__head h1 {
+  font-size: 26px;
+  margin-top: 8px;
+  line-height: 1.35;
+}
+
+.topic-detail__body {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  padding: 26px 28px;
+  box-shadow: var(--shadow-card);
+}
+
+.topic-detail__toggle {
+  margin-top: 16px;
+}
+
+.topic-detail__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.topic-nav-link {
+  text-decoration: none;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  max-width: 45%;
+  transition: color 0.15s ease;
+}
+
+.topic-nav-link:hover {
+  color: var(--accent);
+}
+
+.topic-nav-link--next {
+  text-align: right;
+  margin-left: auto;
+}

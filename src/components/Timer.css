@@ -1,0 +1,35 @@
+.timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  font-size: 15px;
+}
+
+.timer__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--correct);
+}
+
+.timer--warn .timer__dot {
+  background: var(--warn);
+}
+
+.timer--critical .timer__dot {
+  background: var(--incorrect);
+  animation: pulse 1s infinite;
+}
+
+.timer--ok .timer__value { color: var(--text); }
+.timer--warn .timer__value { color: var(--warn); }
+.timer--critical .timer__value { color: var(--incorrect); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
