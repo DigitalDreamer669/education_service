@@ -150,3 +150,30 @@
 .qcard__result--skipped {
   color: var(--text-faint);
 }
+
+.qbookmark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.qbookmark:hover {
+  background: var(--surface-2);
+  color: var(--warn);
+}
+
+.qbookmark--active {
+  color: var(--warn);
+}
+
+.qbookmark svg {
+  width: 18px;
+  height: 18px;
+}

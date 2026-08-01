@@ -44,8 +44,17 @@ export function useQuestions(subject: string | undefined): UseQuestionsResult {
           return;
         }
         const normalized = normalizeQuestions((data ?? []) as QuestionRow[]);
-        cache.set(subject, normalized);
-        setQuestions(normalized);
+        // Удаляем дубликаты по id (оставляем первое вхождение)
+        const seen = new Set<number>();
+        const deduped: Question[] = [];
+        for (const q of normalized) {
+          if (!seen.has(q.id)) {
+            seen.add(q.id);
+            deduped.push(q);
+          }
+        }
+        cache.set(subject, deduped);
+        setQuestions(deduped);
         setLoading(false);
       });
 

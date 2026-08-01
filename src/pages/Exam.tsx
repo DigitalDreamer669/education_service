@@ -32,20 +32,23 @@ export default function Exam() {
   const [examHistory, setExamHistory] = useState<ExamAttempt[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  // Bookmarks (loaded from server)
+  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
+  const [bookmarkLoading, setBookmarkLoading] = useState(true);
+
   if (!config) return <Navigate to="/" replace />;
 
-  // Load exam history on mount
   useEffect(() => {
     import('../lib/serverProgress').then(({ loadExamHistory }) => {
       loadExamHistory().then((data) => {
         setExamHistory(data);
-      }).catch(() => {
-        // silently ignore — history is optional
-      }).finally(() => {
-        setHistoryLoading(false);
-      });
+      }).catch(() => {}).finally(() => setHistoryLoading(false));
     });
-  }, []);
+
+    import('../lib/serverProgress').then(({ loadBookmarks }) => {
+      loadBookmarks(config.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
+    });
+  }, [config]);
 
   function startExam() {
     const pool = shuffle(questions).slice(0, config!.exam.questionCount);
@@ -55,12 +58,21 @@ export default function Exam() {
     setPhase('running');
   }
 
-  function handleAnswered(correct: boolean, selected: string[]) {
+  async function handleAnswered(correct: boolean, selected: string[]) {
     setAttempts((prev) => {
       const next = [...prev];
       next[currentIndex] = { ...next[currentIndex], result: correct ? 'correct' : 'incorrect', selected };
       return next;
     });
+
+    // Auto-bookmark incorrect answers
+    if (!correct && !bookmarkedIds.includes(attempts[currentIndex]?.question.id)) {
+      import('../lib/serverProgress').then(({ toggleBookmark }) => {
+        toggleBookmark(config.slug, attempts[currentIndex].question.id).then((ok) => {
+          if (ok) setBookmarkedIds((prev) => [...prev, attempts[currentIndex].question.id]);
+        });
+      });
+    }
   }
 
   function finishExam() {
@@ -72,6 +84,17 @@ export default function Exam() {
       setCurrentIndex((i) => i + 1);
     } else {
       finishExam();
+    }
+  }
+
+  async function handleToggleBookmark(questionId: number) {
+    const ok = await import('../lib/serverProgress').then(
+      ({ toggleBookmark }) => toggleBookmark(config.slug, questionId)
+    );
+    if (ok) {
+      setBookmarkedIds((prev) =>
+        prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId]
+      );
     }
   }
 
@@ -92,7 +115,6 @@ export default function Exam() {
       ({ saveExamAttempt }) => saveExamAttempt(config.slug, score, attempts.length)
     );
     if (ok) {
-      // Reload history
       const { loadExamHistory } = await import('../lib/serverProgress');
       setExamHistory(await loadExamHistory());
     }
@@ -110,7 +132,7 @@ export default function Exam() {
   if (phase === 'setup') {
     return (
       <Layout crumbs={[{ label: config.shortName, to: `/${config.slug}` }, { label: 'Экзамен' }]}>
-        {loading && <p className="hint">Загружаем вопросы…</p>}
+        {(loading || bookmarkLoading) && <p className="hint">Загружаем…</p>}
         {error && <p className="hint hint--error">Ошибка загрузки: {error}</p>}
         {!loading && !error && (
           <div className="exam-setup">
@@ -159,6 +181,8 @@ export default function Exam() {
           question={attempt.question}
           indexLabel={`${currentIndex + 1} / ${attempts.length}`}
           onAnswered={handleAnswered}
+          isBookmarked={bookmarkedIds.includes(attempt.question.id)}
+          onToggleBookmark={() => handleToggleBookmark(attempt.question.id)}
         />
 
         <div className="exam-run__nav">
@@ -209,6 +233,8 @@ export default function Exam() {
             indexLabel={`${i + 1} / ${attempts.length}`}
             revealed
             initialSelected={a.selected}
+            isBookmarked={bookmarkedIds.includes(a.question.id)}
+            onToggleBookmark={() => handleToggleBookmark(a.question.id)}
           />
         ))}
       </div>

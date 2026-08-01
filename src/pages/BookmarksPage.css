@@ -1,0 +1,49 @@
+.bookmarks-page {
+  max-width: 720px;
+}
+
+.bookmarks-page h1 {
+  margin-top: 8px;
+}
+
+/* Subject filter */
+.bookmarks-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.bookmarks-filter__label {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.bookmarks-filter__select {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.bookmarks-filter__select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 158, 222, 0.15);
+}
+
+/* Bookmarked questions list */
+.bookmarks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bookmarks-count {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--text-faint);
+}

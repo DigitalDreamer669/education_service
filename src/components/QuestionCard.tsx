@@ -11,6 +11,8 @@ interface Props {
   /** Ранее выбранные варианты — для разбора уже пройденного вопроса (используется вместе с revealed) */
   initialSelected?: string[];
   onAnswered?: (correct: boolean, selected: string[]) => void;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
 }
 
 export function QuestionCard({
@@ -19,6 +21,8 @@ export function QuestionCard({
   revealed = false,
   initialSelected,
   onAnswered,
+  isBookmarked = false,
+  onToggleBookmark,
 }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected ?? []));
   const [checked, setChecked] = useState(revealed);
@@ -100,6 +104,19 @@ export function QuestionCard({
         )}
         {checked && revealed && selected.size === 0 && (
           <span className="qcard__result qcard__result--skipped">Без ответа</span>
+        )}
+        {onToggleBookmark && (
+          <button
+            type="button"
+            className={`qbookmark ${isBookmarked ? 'qbookmark--active' : ''}`}
+            onClick={onToggleBookmark}
+            aria-label={isBookmarked ? 'Убрать из закладок' : 'Добавить в закладки'}
+            title={isBookmarked ? 'В закладках' : 'Добавить в закладки'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={isBookmarked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+          </button>
         )}
         <button type="button" className="btn btn--ghost" onClick={() => setHelpOpen((v) => !v)}>
           {helpOpen ? 'Скрыть помощь' : 'Помощь'}

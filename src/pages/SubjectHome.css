@@ -62,3 +62,17 @@
   font-size: 12px;
   color: var(--accent);
 }
+
+/* Закладки — выделенный стиль */
+.mode-card--extra {
+  border-color: var(--warn-soft);
+  background: linear-gradient(135deg, rgba(255, 180, 84, 0.06), transparent);
+}
+
+.mode-card--extra:hover {
+  border-color: var(--warn);
+}
+
+.mode-card--extra .mode-card__stats {
+  color: var(--text-faint);
+}

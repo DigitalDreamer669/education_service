@@ -59,7 +59,7 @@ export function Layout({ children, crumbs }: LayoutProps) {
       <main className="content container">{children}</main>
 
       <footer className="footer container">
-        <span>Данные — из Supabase · прогресс режима «Повторение» хранится локально в этом браузере</span>
+        <span>Данные — из Supabase · прогресс сохраняется на сервере</span>
       </footer>
     </div>
   );

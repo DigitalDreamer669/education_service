@@ -19,6 +19,10 @@ export default function Review() {
   const [progressLoading, setProgressLoading] = useState(true);
   const [progressError, setProgressError] = useState<string | null>(null);
 
+  // Bookmarks (loaded from server)
+  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
+  const [bookmarkLoading, setBookmarkLoading] = useState(true);
+
   // Local state for current session
   const [order, setOrder] = useState<Question[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
@@ -36,6 +40,11 @@ export default function Review() {
         setProgressError('Не удалось загрузить прогресс с сервера');
         setProgressLoading(false);
       });
+    });
+
+    // Load bookmarks for this subject
+    import('../lib/serverProgress').then(({ loadBookmarks }) => {
+      loadBookmarks(config.slug).then((ids) => setBookmarkedIds(ids)).catch(console.error).finally(() => setBookmarkLoading(false));
     });
   }, [config, questions]);
 
@@ -60,6 +69,15 @@ export default function Review() {
         setProgressError('Не удалось сохранить ответ');
       });
     });
+
+    // Auto-bookmark incorrect answers
+    if (!correct && !bookmarkedIds.includes(current.id)) {
+      import('../lib/serverProgress').then(({ toggleBookmark }) => {
+        toggleBookmark(config.slug, current.id).then((ok) => {
+          if (ok) setBookmarkedIds((prev) => [...prev, current.id]);
+        });
+      });
+    }
   }
 
   function goNext() {
@@ -67,6 +85,17 @@ export default function Review() {
     const idx = order.findIndex((q) => q.id === current.id);
     const next = order[(idx + 1) % order.length];
     setCurrentId(next.id);
+  }
+
+  async function handleToggleBookmark(questionId: number) {
+    const ok = await import('../lib/serverProgress').then(
+      ({ toggleBookmark }) => toggleBookmark(config.slug, questionId)
+    );
+    if (ok) {
+      setBookmarkedIds((prev) =>
+        prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId]
+      );
+    }
   }
 
   function handleReset() {
@@ -82,10 +111,10 @@ export default function Review() {
 
   return (
     <Layout crumbs={[{ label: config.shortName, to: `/${config.slug}` }, { label: 'Повторение' }]}>
-      {progressLoading && <p className="hint">Загружаем прогресс…</p>}
+      {(progressLoading || bookmarkLoading) && <p className="hint">Загружаем…</p>}
       {progressError && <p className="hint hint--error">{progressError}</p>}
 
-      {!progressLoading && order.length > 0 && current && (
+      {!progressLoading && !bookmarkLoading && order.length > 0 && current && (
         <>
           <div className="review-head">
             <span className="eyebrow">{config.name}</span>
@@ -99,6 +128,8 @@ export default function Review() {
             question={current}
             indexLabel={`вопрос ${(order.findIndex((q) => q.id === current.id) + 1)} / ${order.length}`}
             onAnswered={handleAnswered}
+            isBookmarked={bookmarkedIds.includes(current.id)}
+            onToggleBookmark={() => handleToggleBookmark(current.id)}
           />
 
           <div className="review-nav">

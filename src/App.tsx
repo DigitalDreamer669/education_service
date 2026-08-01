@@ -10,6 +10,7 @@ const Review = lazy(() => import('./pages/Review'));
 const Search = lazy(() => import('./pages/Search'));
 const Topics = lazy(() => import('./pages/Topics'));
 const TopicDetail = lazy(() => import('./pages/TopicDetail'));
+const BookmarksPage = lazy(() => import('./pages/BookmarksPage'));
 const Login = lazy(() => import('./pages/Login'));
 
 /** Обёртка protected-маршрутов: пока идёт загрузка или пользователь не вошёл — показываем страницу входа */
@@ -36,6 +37,7 @@ export default function App() {
             <Route path="/:subject/search" element={<Protected><Search /></Protected>} />
             <Route path="/:subject/topics" element={<Protected><Topics /></Protected>} />
             <Route path="/:subject/topics/:topicId" element={<Protected><TopicDetail /></Protected>} />
+            <Route path="/:subject/bookmarks" element={<Protected><BookmarksPage /></Protected>} />
 
             {/* Public routes */}
             <Route path="/login" element={<Login />} />

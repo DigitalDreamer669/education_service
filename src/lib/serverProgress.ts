@@ -109,3 +109,105 @@ export async function loadExamHistory(): Promise<ExamAttempt[]> {
 
   return (data ?? []) as ExamAttempt[];
 }
+
+/** Загрузить закладки по предмету */
+export async function loadBookmarks(subject: string): Promise<number[]> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user?.user) return [];
+
+  const { data, error } = await supabase
+    .from('bookmarks')
+    .select('question_id')
+    .eq('user_id', user.user.id)
+    .eq('subject', subject);
+
+  if (error) {
+    console.error('[serverProgress] loadBookmarks error:', error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row: { question_id: number }) => row.question_id);
+}
+
+/** Загрузить все закладки пользователя */
+export async function loadAllBookmarks(): Promise<{ subject: string; question_id: number }[]> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user?.user) return [];
+
+  const { data, error } = await supabase
+    .from('bookmarks')
+    .select('subject, question_id')
+    .eq('user_id', user.user.id);
+
+  if (error) {
+    console.error('[serverProgress] loadAllBookmarks error:', error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+/** Переключить закладку: если есть — удалить, иначе вставить */
+export async function toggleBookmark(
+  subject: string,
+  questionId: number
+): Promise<boolean> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user?.user) return false;
+
+  // Сначала проверяем, есть ли уже закладка
+  const { data: existing } = await supabase
+    .from('bookmarks')
+    .select('id')
+    .eq('user_id', user.user.id)
+    .eq('subject', subject)
+    .eq('question_id', questionId)
+    .single();
+
+  if (existing) {
+    // Удаляем
+    const { error } = await supabase
+      .from('bookmarks')
+      .delete()
+      .eq('id', existing.id);
+    if (error) {
+      console.error('[serverProgress] toggleBookmark delete error:', error.message);
+      return false;
+    }
+  } else {
+    // Создаём
+    const { error } = await supabase.from('bookmarks').insert({
+      user_id: user.user.id,
+      subject,
+      question_id: questionId,
+    });
+    if (error) {
+      console.error('[serverProgress] toggleBookmark insert error:', error.message);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/** Загрузить ID сложных вопросов по предмету (ответы с ошибкой) */
+export async function loadDifficultQuestions(subject: string): Promise<number[]> {
+  const { data: user } = await supabase.auth.getUser();
+  if (!user?.user) return [];
+
+  const { data, error } = await supabase
+    .from('user_progress')
+    .select('question_id')
+    .eq('user_id', user.user.id)
+    .eq('subject', subject)
+    .eq('result', 'incorrect');
+
+  if (error) {
+    console.error('[serverProgress] loadDifficultQuestions error:', error.message);
+    return [];
+  }
+
+  // Уникальные question_id
+  const ids = new Set((data ?? []).map((row: { question_id: number }) => row.question_id));
+  return [...ids];
+}
