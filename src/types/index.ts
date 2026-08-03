@@ -59,6 +59,21 @@ export interface Topic {
   contentFull: string | null;
 }
 
+/**
+ * Один "кусок" конспекта (абзац/пункт списка/определение) — минимальная единица
+ * для поиска по конспектам, чтобы показывать не всю тему целиком, а только
+ * подходящий фрагмент. См. splitTopicIntoChunks в lib/parse.ts.
+ */
+export interface TopicChunk {
+  id: string; // `${topicId}:${индекс куска}` — стабильный ключ для React
+  topicId: number;
+  topicNumber: number;
+  topicTitle: string;
+  /** Ближайший предшествующий заголовок markdown (# / ##) внутри конспекта, если есть */
+  heading: string | null;
+  text: string;
+}
+
 export type SubjectSlug =
   | 'it_product_development'
   | 'business-informatics'

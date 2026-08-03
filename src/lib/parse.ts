@@ -1,4 +1,4 @@
-import type { AnswerStat, Question, QuestionOption, QuestionRow, Topic, TopicRow } from '../types';
+import type { AnswerStat, Question, QuestionOption, QuestionRow, Topic, TopicChunk, TopicRow } from '../types';
 
 /**
  * Поля options и statistics в таблице questions хранятся как jsonb,
@@ -115,15 +115,92 @@ export function normalizeForSearch(s: string): string {
  * (подстрокой, без учёта регистра/порядка) — терпимо к опечаткам в раскладке не будет,
  * но не требует точного совпадения фразы целиком.
  */
+/** Общая часть нестрогого поиска: разбивает запрос на слова (>1 символа). */
+function searchWords(rawQuery: string): string[] {
+  return normalizeForSearch(rawQuery)
+    .split(' ')
+    .filter((w) => w.length > 1);
+}
+
+/** true, если КАЖДОЕ слово запроса встречается где-то в haystack (уже нормализованном или сыром — нормализуем сами). */
+function matchesWords(haystack: string, words: string[]): boolean {
+  if (words.length === 0) return false;
+  const normalizedHaystack = normalizeForSearch(haystack);
+  return words.every((w) => normalizedHaystack.includes(w));
+}
+
 export function matchesSearch(q: Question, rawQuery: string): boolean {
-  const query = normalizeForSearch(rawQuery);
-  if (!query) return false;
-  const words = query.split(' ').filter((w) => w.length > 1);
+  const words = searchWords(rawQuery);
   if (words.length === 0) return false;
 
-  const haystack = normalizeForSearch(
-    [q.text, ...q.options, q.explanation ?? ''].join(' ')
-  );
+  const haystack = [q.text, ...q.options, q.explanation ?? ''].join(' ');
+  return matchesWords(haystack, words);
+}
 
-  return words.every((w) => haystack.includes(w));
+/**
+ * Разбивает markdown-конспект темы на самостоятельные куски (абзацы/пункты списка),
+ * запоминая ближайший предшествующий заголовок (#, ##, ###) как контекст.
+ * Не пытается понять, что именно является "определением" — семантика конспектов
+ * слишком разная (то список терминов, то нумерованные этапы, то таблица),
+ * поэтому единица поиска — просто блок текста между пустыми строками.
+ * Это достаточно, чтобы показать пользователю short-версию "нужного места",
+ * а не весь конспект целиком.
+ */
+export function splitTopicIntoChunks(topic: Topic): TopicChunk[] {
+  const content = topic.contentMain ?? topic.contentFull;
+  if (!content) return [];
+
+  const headingRe = /^#{1,6}\s+(.+?)\s*$/;
+  const blocks = content.split(/\n\s*\n/);
+
+  const chunks: TopicChunk[] = [];
+  let currentHeading: string | null = null;
+  let index = 0;
+
+  for (const rawBlock of blocks) {
+    const block = rawBlock.trim();
+    if (!block) continue;
+
+    const headingMatch = block.match(headingRe);
+    if (headingMatch && block.split('\n').length === 1) {
+      // Строка целиком — заголовок markdown: запоминаем как контекст, самим куском не делаем.
+      currentHeading = headingMatch[1].trim();
+      continue;
+    }
+
+    // Отбрасываем совсем короткий "шум" (например, одиночный разделитель таблицы).
+    if (block.replace(/[^\p{L}\p{N}]/gu, '').length < 8) continue;
+
+    chunks.push({
+      id: `${topic.id}:${index}`,
+      topicId: topic.id,
+      topicNumber: topic.number,
+      topicTitle: topic.title,
+      heading: currentHeading,
+      text: block,
+    });
+    index += 1;
+  }
+
+  return chunks;
+}
+
+/** Строит единый индекс кусков конспектов по всем темам предмета (для поиска). */
+export function buildDefinitionIndex(topics: Topic[]): TopicChunk[] {
+  return topics.flatMap(splitTopicIntoChunks);
+}
+
+/**
+ * Поиск по кускам конспектов той же логикой, что и поиск вопросов
+ * (все слова запроса должны встретиться в тексте куска, порядок и регистр не важны).
+ * В haystack включаем заголовок и заголовок темы, чтобы находить куски даже
+ * если само слово упомянуто только в заголовке раздела.
+ */
+export function searchDefinitions(chunks: TopicChunk[], rawQuery: string): TopicChunk[] {
+  const words = searchWords(rawQuery);
+  if (words.length === 0) return [];
+
+  return chunks.filter((c) =>
+    matchesWords([c.heading ?? '', c.topicTitle, c.text].join(' '), words)
+  );
 }

@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { QuestionCard } from '../components/QuestionCard';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useQuestions } from '../hooks/useQuestions';
+import { useTopics } from '../hooks/useTopics';
 import { getSubject } from '../config/subjects';
-import { matchesSearch } from '../lib/parse';
+import { buildDefinitionIndex, matchesSearch, searchDefinitions } from '../lib/parse';
 import './Search.css';
+
+// Ограничиваем число показываемых кусков конспектов, чтобы не заваливать
+// страницу при коротких/частых запросах (например, при вводе одной буквы).
+const MAX_DEFINITION_RESULTS = 20;
 
 export default function Search() {
   const { subject } = useParams();
   const config = getSubject(subject);
   const { questions, loading, error } = useQuestions(config?.slug);
+  const { topics, loading: topicsLoading } = useTopics(config?.slug, config?.topicsSourceFile);
   const [query, setQuery] = useState('');
 
   // Bookmarks (loaded from server)
@@ -44,6 +51,16 @@ export default function Search() {
     return questions.filter((q) => matchesSearch(q, query));
   }, [questions, query]);
 
+  // Поиск по конспектам полностью независим от поиска вопросов выше:
+  // отдельный индекс, отдельный memo, отдельная секция рендера — так что
+  // логику/поведение поиска по вопросам это никак не задевает.
+  const definitionIndex = useMemo(() => buildDefinitionIndex(topics), [topics]);
+
+  const definitionResults = useMemo(() => {
+    if (!query.trim()) return [];
+    return searchDefinitions(definitionIndex, query).slice(0, MAX_DEFINITION_RESULTS);
+  }, [definitionIndex, query]);
+
   return (
     <Layout crumbs={[{ label: config.shortName, to: `/${config.slug}` }, { label: 'Поиск' }]}>
       {(loading || bookmarkLoading) && <p className="hint">Загружаем…</p>}
@@ -70,7 +87,7 @@ export default function Search() {
 
           {!loading && query.trim() && (
             <p className="search-count mono">
-              {results.length} {results.length === 1 ? 'совпадение' : 'совпадений'}
+              {results.length} {results.length === 1 ? 'совпадение' : 'совпадений'} среди вопросов
             </p>
           )}
 
@@ -85,6 +102,41 @@ export default function Search() {
               />
             ))}
           </div>
+
+          {query.trim() && (
+            <div className="def-section">
+              <h2 className="def-section__title">Определения из конспектов</h2>
+
+              {topicsLoading && <p className="hint">Загружаем конспекты…</p>}
+
+              {!topicsLoading && (
+                <>
+                  <p className="search-count mono">
+                    {definitionResults.length}{' '}
+                    {definitionResults.length === 1 ? 'совпадение' : 'совпадений'} в конспектах
+                    {definitionResults.length === MAX_DEFINITION_RESULTS ? ' (показаны первые)' : ''}
+                  </p>
+
+                  <div className="def-results">
+                    {definitionResults.map((chunk) => (
+                      <div key={chunk.id} className="def-card">
+                        <div className="def-card__meta mono">
+                          <span>Тема {chunk.topicNumber || chunk.topicId}: {chunk.topicTitle}</span>
+                          {chunk.heading && <span className="def-card__heading"> · {chunk.heading}</span>}
+                        </div>
+                        <div className="def-card__body">
+                          <MarkdownRenderer content={chunk.text} />
+                        </div>
+                        <Link className="def-card__link" to={`/${config.slug}/topics/${chunk.topicId}`}>
+                          Открыть тему целиком →
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </>
       )}
     </Layout>
