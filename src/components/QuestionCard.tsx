@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Question } from '../types';
 import { HelpPanel } from './HelpPanel';
+import { useSettings } from '../hooks/useSettings';
+import { shuffle } from '../lib/parse';
 import './QuestionCard.css';
 
 interface Props {
@@ -24,9 +26,17 @@ export function QuestionCard({
   isBookmarked = false,
   onToggleBookmark,
 }: Props) {
+  const { settings } = useSettings();
   const [selected, setSelected] = useState<Set<string>>(new Set(initialSelected ?? []));
   const [checked, setChecked] = useState(revealed);
   const [helpOpen, setHelpOpen] = useState(false);
+
+  // Порядок вариантов: перемешивается один раз на вопрос, если включена настройка
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const displayOptions = useMemo(
+    () => (settings.shuffleOptions ? shuffle(question.options) : question.options),
+    [question.id, settings.shuffleOptions]
+  );
 
   const isCorrectSet =
     selected.size === question.correctAnswers.length &&
@@ -71,7 +81,7 @@ export function QuestionCard({
       <p className="qcard__text">{question.text}</p>
 
       <div className="qcard__options" role={question.isMultiple ? 'group' : 'radiogroup'}>
-        {question.options.map((opt) => {
+        {displayOptions.map((opt) => {
           const state = optionState(opt);
           return (
             <button

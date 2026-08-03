@@ -39,3 +39,126 @@
   flex-direction: column;
   gap: 16px;
 }
+
+.ai-search {
+  margin-bottom: 24px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px dashed var(--surface-border);
+  border-radius: var(--radius-sm);
+}
+
+.ai-search__button {
+  background: var(--accent);
+  color: var(--bg, #fff);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-search__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ai-search__hint {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.ai-search__error {
+  margin-top: 10px;
+}
+
+.ai-search__result {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-group__title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+  margin: 0 0 4px;
+}
+
+.ai-group__related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-related-chip {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-border);
+  color: var(--text);
+}
+
+.ai-search__disclaimer {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.def-section {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--surface-border);
+}
+
+.def-section__title {
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.def-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.def-card {
+  background: var(--surface);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.def-card__meta {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-bottom: 8px;
+}
+
+.def-card__heading {
+  color: var(--text-dim);
+}
+
+.def-card__body {
+  font-size: 14px;
+}
+
+.def-card__body .md {
+  font-size: 14px;
+}
+
+.def-card__link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.def-card__link:hover {
+  text-decoration: underline;
+}
