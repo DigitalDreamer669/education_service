@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { QuestionCard } from '../components/QuestionCard';
@@ -7,6 +7,13 @@ import { useQuestions } from '../hooks/useQuestions';
 import { useTopics } from '../hooks/useTopics';
 import { getSubject } from '../config/subjects';
 import { buildDefinitionIndex, matchesSearch, searchDefinitions } from '../lib/parse';
+import {
+  askAi,
+  getAiSearchCooldownMs,
+  AiSearchRateLimitError,
+  AiSearchConfigError,
+  type AiExplanation,
+} from '../lib/aiSearch';
 import './Search.css';
 
 // Ограничиваем число показываемых кусков конспектов, чтобы не заваливать
@@ -23,6 +30,25 @@ export default function Search() {
   // Bookmarks (loaded from server)
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
   const [bookmarkLoading, setBookmarkLoading] = useState(true);
+
+  // ИИ-поиск: отдельные хуки объявлены здесь (а не ниже, рядом с обработчиком),
+  // чтобы порядок вызова хуков не зависел от раннего return ниже.
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AiExplanation | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [aiCooldownMs, setAiCooldownMs] = useState(0);
+  const aiQueryRef = useRef('');
+
+  // Тикаем раз в секунду, пока действует троттлинг, только чтобы обновить
+  // подпись на кнопке — сам троттлинг живёт в lib/aiSearch.ts, а не здесь.
+  useEffect(() => {
+    if (aiCooldownMs <= 0) return;
+    const t = setInterval(() => {
+      const remaining = getAiSearchCooldownMs();
+      setAiCooldownMs(remaining);
+    }, 250);
+    return () => clearInterval(t);
+  }, [aiCooldownMs]);
 
   if (!config) return <Navigate to="/" replace />;
 
@@ -61,6 +87,37 @@ export default function Search() {
     return searchDefinitions(definitionIndex, query).slice(0, MAX_DEFINITION_RESULTS);
   }, [definitionIndex, query]);
 
+  // --- ИИ-поиск: полностью отдельный от поиска выше, включается только вручную ---
+  // (по нажатию кнопки), никогда не запускается автоматически при вводе текста
+  // и никак не влияет на локальный поиск по вопросам/конспектам.
+  // (хуки состояния для него объявлены выше, до раннего return)
+  async function handleAskAi() {
+    const trimmed = query.trim();
+    if (!trimmed || aiLoading) return;
+
+    setAiLoading(true);
+    setAiError(null);
+    aiQueryRef.current = trimmed;
+
+    try {
+      const result = await askAi(trimmed);
+      // Если пользователь успел изменить запрос, пока ответ летел — не подсовываем
+      // устаревший результат под новым текстом в поле поиска.
+      if (aiQueryRef.current === trimmed) setAiResult(result);
+    } catch (e) {
+      if (e instanceof AiSearchRateLimitError) {
+        setAiCooldownMs(e.waitMs);
+        setAiError(e.message);
+      } else if (e instanceof AiSearchConfigError) {
+        setAiError(e.message);
+      } else {
+        setAiError(e instanceof Error ? e.message : 'Не удалось получить ответ от ИИ');
+      }
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
   return (
     <Layout crumbs={[{ label: config.shortName, to: `/${config.slug}` }, { label: 'Поиск' }]}>
       {(loading || bookmarkLoading) && <p className="hint">Загружаем…</p>}
@@ -89,6 +146,68 @@ export default function Search() {
             <p className="search-count mono">
               {results.length} {results.length === 1 ? 'совпадение' : 'совпадений'} среди вопросов
             </p>
+          )}
+
+          {query.trim() && (
+            <div className="ai-search">
+              <button
+                type="button"
+                className="ai-search__button"
+                disabled={!query.trim() || aiLoading || aiCooldownMs > 0}
+                onClick={handleAskAi}
+              >
+                {aiLoading
+                  ? 'Спрашиваем ИИ…'
+                  : aiCooldownMs > 0
+                    ? `Подождите ${Math.ceil(aiCooldownMs / 1000)} с…`
+                    : '✨ Спросить ИИ'}
+              </button>
+              <span className="ai-search__hint">Не нашли нужное? Спросите ИИ отдельно — это не связано с поиском выше.</span>
+
+              {aiError && <p className="hint hint--error ai-search__error">{aiError}</p>}
+
+              {aiResult && !aiLoading && (
+                <div className="ai-search__result">
+                  {aiResult.summary && (
+                    <div className="ai-group">
+                      <h3 className="ai-group__title">Кратко</h3>
+                      <p>{aiResult.summary}</p>
+                    </div>
+                  )}
+                  {aiResult.definition && (
+                    <div className="ai-group">
+                      <h3 className="ai-group__title">Определение</h3>
+                      <MarkdownRenderer content={aiResult.definition} />
+                    </div>
+                  )}
+                  {aiResult.explanation && (
+                    <div className="ai-group">
+                      <h3 className="ai-group__title">Объяснение</h3>
+                      <MarkdownRenderer content={aiResult.explanation} />
+                    </div>
+                  )}
+                  {aiResult.example && (
+                    <div className="ai-group">
+                      <h3 className="ai-group__title">Пример</h3>
+                      <MarkdownRenderer content={aiResult.example} />
+                    </div>
+                  )}
+                  {aiResult.related.length > 0 && (
+                    <div className="ai-group">
+                      <h3 className="ai-group__title">Связанные термины</h3>
+                      <div className="ai-group__related">
+                        {aiResult.related.map((term) => (
+                          <span key={term} className="ai-related-chip">
+                            {term}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="ai-search__disclaimer mono">Ответ сгенерирован ИИ и может содержать неточности.</p>
+                </div>
+              )}
+            </div>
           )}
 
           <div className="search-results">
