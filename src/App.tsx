@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthContextProvider } from './contexts/AuthContext';
+import { SettingsContextProvider } from './contexts/SettingsContext';
 import { useAuth } from './hooks/useAuth';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -26,24 +27,26 @@ function Protected({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <HashRouter>
-      <AuthContextProvider>
-        <Suspense fallback={<div className="route-loading">Загрузка…</div>}>
-          <Routes>
-            {/* Protected routes */}
-            <Route path="/" element={<Protected><Home /></Protected>} />
-            <Route path="/:subject" element={<Protected><SubjectHome /></Protected>} />
-            <Route path="/:subject/exam" element={<Protected><Exam /></Protected>} />
-            <Route path="/:subject/review" element={<Protected><Review /></Protected>} />
-            <Route path="/:subject/search" element={<Protected><Search /></Protected>} />
-            <Route path="/:subject/topics" element={<Protected><Topics /></Protected>} />
-            <Route path="/:subject/topics/:topicId" element={<Protected><TopicDetail /></Protected>} />
-            <Route path="/:subject/bookmarks" element={<Protected><BookmarksPage /></Protected>} />
+      <SettingsContextProvider>
+        <AuthContextProvider>
+          <Suspense fallback={<div className="route-loading">Загрузка…</div>}>
+            <Routes>
+              {/* Protected routes */}
+              <Route path="/" element={<Protected><Home /></Protected>} />
+              <Route path="/:subject" element={<Protected><SubjectHome /></Protected>} />
+              <Route path="/:subject/exam" element={<Protected><Exam /></Protected>} />
+              <Route path="/:subject/review" element={<Protected><Review /></Protected>} />
+              <Route path="/:subject/search" element={<Protected><Search /></Protected>} />
+              <Route path="/:subject/topics" element={<Protected><Topics /></Protected>} />
+              <Route path="/:subject/topics/:topicId" element={<Protected><TopicDetail /></Protected>} />
+              <Route path="/:subject/bookmarks" element={<Protected><BookmarksPage /></Protected>} />
 
-            {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </Suspense>
-      </AuthContextProvider>
+              {/* Public routes */}
+              <Route path="/login" element={<Login />} />
+            </Routes>
+          </Suspense>
+        </AuthContextProvider>
+      </SettingsContextProvider>
     </HashRouter>
   );
 }

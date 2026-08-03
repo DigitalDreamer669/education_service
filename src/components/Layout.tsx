@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { SettingsPanel } from './SettingsPanel';
 import './Layout.css';
 
 interface LayoutProps {
@@ -38,6 +39,7 @@ export function Layout({ children, crumbs }: LayoutProps) {
           )}
 
           <div className="topbar__auth">
+            <SettingsPanel />
             {user ? (
               <>
                 <span className="topbar__user">
