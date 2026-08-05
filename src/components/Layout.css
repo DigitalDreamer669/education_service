@@ -11,6 +11,13 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+body.topbar-hidden .topbar {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .topbar__inner {
@@ -49,13 +56,16 @@
   gap: 6px;
   font-size: 14px;
   color: var(--text-dim);
-  flex-wrap: wrap;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .crumbs__item {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .crumbs__item a {
@@ -74,6 +84,7 @@
 
 .crumbs__current {
   color: var(--text);
+  white-space: nowrap;
 }
 
 .topbar__auth {

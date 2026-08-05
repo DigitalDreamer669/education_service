@@ -151,3 +151,14 @@
 .settings-panel__reset:hover {
   color: var(--text-dim);
 }
+
+@media (max-width: 600px) {
+  .settings-panel__dropdown {
+    position: fixed;
+    top: 60px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+  }
+}

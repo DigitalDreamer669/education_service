@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { Layout } from '../components/Layout';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -11,6 +11,21 @@ export default function TopicDetail() {
   const config = getSubject(subject);
   const { topics, loading, error } = useTopics(config?.slug, config?.topicsSourceFile);
   const [expanded, setExpanded] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 80);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle('topbar-hidden', scrolled);
+    return () => document.body.classList.remove('topbar-hidden');
+  }, [scrolled]);
 
   if (!config) return <Navigate to="/" replace />;
 
