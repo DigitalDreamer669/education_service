@@ -30,3 +30,6 @@ build/
 tsconfig.tsbuildinfo
 
 .env
+
+.mcp.json
+
