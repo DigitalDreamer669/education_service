@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState, type ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { prefetchAllSubjects } from '../lib/prefetch';
 import type { User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -54,7 +55,12 @@ export function AuthContextProvider({ children }: AuthProviderProps) {
     // Восстанавливаем сессию из localStorage (Supabase делает это автоматически)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        // Заранее прогреваем офлайн-кэш всеми предметами, чтобы сайт полноценно
+        // работал без сети даже для тем, которые пользователь ещё не открывал.
+        void prefetchAllSubjects(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -63,6 +69,7 @@ export function AuthContextProvider({ children }: AuthProviderProps) {
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
+        void prefetchAllSubjects(session.user.id);
       } else {
         setProfile(null);
       }

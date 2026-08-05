@@ -93,7 +93,8 @@ export interface SubjectConfig {
 }
 
 export interface ExamAttempt {
-  id: number;
+  /** Локальный идентификатор ("server:123" когда подтверждена сервером, "local:..." пока в очереди на отправку) */
+  id: string;
   subject: string;
   score: number;
   total_questions: number;

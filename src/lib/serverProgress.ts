@@ -1,206 +1,113 @@
 import { supabase } from './supabase';
+import { enqueue } from './syncQueue';
+import {
+  refreshSubjectFromServer,
+  refreshExamHistoryFromServer,
+  readReviewProgress,
+  readBookmarks,
+  readAllBookmarks,
+  readExamHistory,
+  readDifficultQuestions,
+} from './offlineStore';
+import type { ExamAttempt } from '../types';
 
 export type QuestionResult = 'correct' | 'incorrect';
+export type { ExamAttempt };
 
-export interface ExamAttempt {
-  id: number;
-  subject: string;
-  score: number;
-  total_questions: number;
-  started_at: string;
-  finished_at: string | null;
+/**
+ * Публичный API этого модуля НЕ изменился по сигнатурам — все страницы/хуки
+ * (Exam.tsx, Review.tsx, Search.tsx, useProgress.ts, BookmarksPage.tsx) продолжают
+ * вызывать те же функции с теми же аргументами и получают тот же тип результата.
+ * Изменилась только реализация: раньше каждая функция шла прямо в Supabase, теперь
+ * чтение — из IndexedDB (см. lib/offlineStore.ts), запись — через очередь
+ * (см. lib/syncQueue.ts). Это и есть "минимальные изменения поверх существующей
+ * архитектуры": UI-код вообще не пришлось трогать.
+ */
+
+async function currentUserId(): Promise<string | null> {
+  // getUser() бьёт в сеть за подтверждением токена; офлайн это не нужно и не сработает —
+  // сессия и так уже восстановлена локально Supabase SDK из localStorage при старте
+  // (см. AuthContext), поэтому здесь используем локальный getSession().
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
 }
 
-/** Загрузить прогресс повторения по предмету */
+/** Загрузить прогресс повторения по предмету (из локального кэша, с фоновым обновлением с сервера) */
 export async function loadReviewProgress(subject: string): Promise<Record<number, QuestionResult>> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return {};
-
-  const { data, error } = await supabase
-    .from('user_progress')
-    .select('*')
-    .eq('user_id', user.user.id)
-    .eq('subject', subject);
-
-  if (error) {
-    console.error('[serverProgress] loadReviewProgress error:', error.message);
-    return {};
-  }
-
-  const results: Record<number, QuestionResult> = {};
-  for (const row of data ?? []) {
-    results[row.question_id] = row.result;
-  }
-  return results;
+  const uid = await currentUserId();
+  if (!uid) return {};
+  // Не блокируем чтение сетью — сначала фоново обновляем, затем всегда читаем из IDB.
+  await refreshSubjectFromServer(uid, subject);
+  return readReviewProgress(uid, subject);
 }
 
-/** Сохранить результат ответа в режиме «Повторение» */
+/** Сохранить результат ответа в режиме «Повторение» — ставится в офлайн-очередь */
 export async function saveReviewResult(
   subject: string,
   questionId: number,
   result: QuestionResult
 ): Promise<boolean> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return false;
-
-  // Upsert: если запись уже есть — обновляем результат
-  const { error } = await supabase
-    .from('user_progress')
-    .upsert(
-      { user_id: user.user.id, subject, question_id: questionId, result },
-      { onConflict: 'user_id,subject,question_id' }
-    );
-
-  if (error) {
-    console.error('[serverProgress] saveReviewResult error:', error.message);
-    return false;
-  }
+  const uid = await currentUserId();
+  if (!uid) return false;
+  await enqueue(uid, { kind: 'review_result', subject, questionId, result });
   return true;
 }
 
-/** Сохранить результат экзамена */
+/** Сохранить результат экзамена — ставится в офлайн-очередь (started_at служит идемпотентным ключом) */
 export async function saveExamAttempt(
   subject: string,
   score: number,
   totalQuestions: number
 ): Promise<boolean> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return false;
-
-  const now = new Date().toISOString();
-  const { error } = await supabase.from('exam_attempts').insert({
-    user_id: user.user.id,
-    subject,
-    score,
-    total_questions: totalQuestions,
-    started_at: now,
-    finished_at: now,
-  });
-
-  if (error) {
-    console.error('[serverProgress] saveExamAttempt error:', error.message);
-    return false;
-  }
+  const uid = await currentUserId();
+  if (!uid) return false;
+  const startedAt = new Date().toISOString();
+  await enqueue(uid, { kind: 'exam_attempt', subject, score, totalQuestions, startedAt });
   return true;
 }
 
-/** Загрузить историю экзаменов */
+/** Загрузить историю экзаменов (из локального кэша, с фоновым обновлением) */
 export async function loadExamHistory(): Promise<ExamAttempt[]> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return [];
-
-  const { data, error } = await supabase
-    .from('exam_attempts')
-    .select('*')
-    .eq('user_id', user.user.id)
-    .order('started_at', { ascending: false });
-
-  if (error) {
-    console.error('[serverProgress] loadExamHistory error:', error.message);
-    return [];
-  }
-
-  return (data ?? []) as ExamAttempt[];
+  const uid = await currentUserId();
+  if (!uid) return [];
+  await refreshExamHistoryFromServer(uid);
+  return readExamHistory(uid);
 }
 
 /** Загрузить закладки по предмету */
 export async function loadBookmarks(subject: string): Promise<number[]> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return [];
-
-  const { data, error } = await supabase
-    .from('bookmarks')
-    .select('question_id')
-    .eq('user_id', user.user.id)
-    .eq('subject', subject);
-
-  if (error) {
-    console.error('[serverProgress] loadBookmarks error:', error.message);
-    return [];
-  }
-
-  return (data ?? []).map((row: { question_id: number }) => row.question_id);
+  const uid = await currentUserId();
+  if (!uid) return [];
+  await refreshSubjectFromServer(uid, subject);
+  return readBookmarks(uid, subject);
 }
 
-/** Загрузить все закладки пользователя */
+/** Загрузить все закладки пользователя (используется на странице закладок — все предметы сразу) */
 export async function loadAllBookmarks(): Promise<{ subject: string; question_id: number }[]> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return [];
-
-  const { data, error } = await supabase
-    .from('bookmarks')
-    .select('subject, question_id')
-    .eq('user_id', user.user.id);
-
-  if (error) {
-    console.error('[serverProgress] loadAllBookmarks error:', error.message);
-    return [];
-  }
-
-  return data ?? [];
+  const uid = await currentUserId();
+  if (!uid) return [];
+  return readAllBookmarks(uid);
 }
 
-/** Переключить закладку: если есть — удалить, иначе вставить */
-export async function toggleBookmark(
-  subject: string,
-  questionId: number
-): Promise<boolean> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return false;
-
-  // Сначала проверяем, есть ли уже закладка
-  const { data: existing } = await supabase
-    .from('bookmarks')
-    .select('id')
-    .eq('user_id', user.user.id)
-    .eq('subject', subject)
-    .eq('question_id', questionId)
-    .single();
-
-  if (existing) {
-    // Удаляем
-    const { error } = await supabase
-      .from('bookmarks')
-      .delete()
-      .eq('id', existing.id);
-    if (error) {
-      console.error('[serverProgress] toggleBookmark delete error:', error.message);
-      return false;
-    }
-  } else {
-    // Создаём
-    const { error } = await supabase.from('bookmarks').insert({
-      user_id: user.user.id,
-      subject,
-      question_id: questionId,
-    });
-    if (error) {
-      console.error('[serverProgress] toggleBookmark insert error:', error.message);
-      return false;
-    }
-  }
-
+/**
+ * Переключить закладку. Раньше делала read-then-write (select existing, потом insert/delete) —
+ * такая пара небезопасна в офлайн-очереди (могла бы продублироваться при повторной отправке).
+ * Теперь вычисляем желаемое конечное состояние локально (на основе текущего кэша) и ставим
+ * в очередь bookmark_set — идемпотентную операцию (см. syncQueue.ts).
+ */
+export async function toggleBookmark(subject: string, questionId: number): Promise<boolean> {
+  const uid = await currentUserId();
+  if (!uid) return false;
+  const current = await readBookmarks(uid, subject);
+  const willBeBookmarked = !current.includes(questionId);
+  await enqueue(uid, { kind: 'bookmark_set', subject, questionId, bookmarked: willBeBookmarked });
   return true;
 }
 
 /** Загрузить ID сложных вопросов по предмету (ответы с ошибкой) */
 export async function loadDifficultQuestions(subject: string): Promise<number[]> {
-  const { data: user } = await supabase.auth.getUser();
-  if (!user?.user) return [];
-
-  const { data, error } = await supabase
-    .from('user_progress')
-    .select('question_id')
-    .eq('user_id', user.user.id)
-    .eq('subject', subject)
-    .eq('result', 'incorrect');
-
-  if (error) {
-    console.error('[serverProgress] loadDifficultQuestions error:', error.message);
-    return [];
-  }
-
-  // Уникальные question_id
-  const ids = new Set((data ?? []).map((row: { question_id: number }) => row.question_id));
-  return [...ids];
+  const uid = await currentUserId();
+  if (!uid) return [];
+  await refreshSubjectFromServer(uid, subject);
+  return readDifficultQuestions(uid, subject);
 }

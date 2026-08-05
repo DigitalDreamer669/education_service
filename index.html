@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content="Подготовка к вступительному экзамену в магистратуру: тренировка вопросов, экзамен с таймером, поиск и конспекты по темам." />
     <title>Подготовка к экзамену</title>
+
+    <!-- PWA / офлайн: манифест сам инжектится плагином vite-plugin-pwa (см. vite.config.ts) -->
+    <meta name="theme-color" content="#0d0d0f" />
+
+    <!--
+      iOS Safari игнорирует часть Web App Manifest (в частности, "icons") при добавлении
+      на экран "Домой" — иконку и режим отображения нужно продублировать тегами ниже,
+      иначе установленный на iPhone/iPad PWA будет открываться во вкладке Safari с
+      системной иконкой-скриншотом вместо standalone-режима с нормальной иконкой.
+    -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Экзамен-прод" />
   </head>
   <body>
     <div id="root"></div>

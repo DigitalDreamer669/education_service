@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { SettingsPanel } from './SettingsPanel';
+import { OfflineStatus } from './OfflineStatus';
 import './Layout.css';
 
 interface LayoutProps {
@@ -63,6 +64,8 @@ export function Layout({ children, crumbs }: LayoutProps) {
       <footer className="footer container">
         <span>Данные — из Supabase · прогресс сохраняется на сервере</span>
       </footer>
+
+      <OfflineStatus />
     </div>
   );
 }
