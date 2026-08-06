@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import rehypeRaw from 'rehype-raw';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import './MarkdownRenderer.css';
 
 interface Props {
@@ -91,7 +94,10 @@ export function MarkdownRenderer({ content }: Props) {
 
   return (
     <div className="md" ref={containerRef}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeRaw, rehypeKatex]}
+      >
         {html}
       </ReactMarkdown>
     </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Question } from '../types';
 import { HelpPanel } from './HelpPanel';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import { useSettings } from '../hooks/useSettings';
 import { shuffle } from '../lib/parse';
 import './QuestionCard.css';
@@ -78,7 +79,9 @@ export function QuestionCard({
         {question.isMultiple && <span className="qcard__badge">несколько ответов</span>}
       </div>
 
-      <p className="qcard__text">{question.text}</p>
+      <div className="qcard__text">
+        <MarkdownRenderer content={question.text} />
+      </div>
 
       <div className="qcard__options" role={question.isMultiple ? 'group' : 'radiogroup'}>
         {displayOptions.map((opt) => {
