@@ -11,7 +11,7 @@ import './OfflineStatus.css';
  * пока всё работает штатно (требование 9 ТЗ).
  */
 export function OfflineStatus() {
-  const { user } = useAuth();
+  const { user, isOfflineSession } = useAuth();
   const online = useOnlineStatus();
   const [pending, setPending] = useState(0);
 
@@ -31,16 +31,21 @@ export function OfflineStatus() {
     };
   }, [user]);
 
-  if (online && pending === 0) return null;
+  // isOfflineSession: авторизация восстановлена из локального кэша, а не живой
+  // сессией (обычно потому что офлайн дольше времени жизни токена) — показываем
+  // бейдж даже если navigator.onLine соврал, что мы online (см. AuthContext).
+  if (online && pending === 0 && !isOfflineSession) return null;
 
   return (
     <div className={`offline-badge ${!online ? 'offline-badge--offline' : ''}`}>
       {!online ? (
         <span>Офлайн{pending > 0 ? ` · ${pending} ${pluralChanges(pending)} ждут синхронизации` : ''}</span>
-      ) : (
+      ) : pending > 0 ? (
         <button type="button" className="offline-badge__sync" onClick={() => void flushQueue()}>
           Синхронизация… ({pending})
         </button>
+      ) : (
+        <span>Восстанавливаем сессию…</span>
       )}
     </div>
   );

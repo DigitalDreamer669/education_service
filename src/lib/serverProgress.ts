@@ -1,5 +1,5 @@
-import { supabase } from './supabase';
 import { enqueue } from './syncQueue';
+import { getEffectiveUserId } from './authCache';
 import {
   refreshSubjectFromServer,
   refreshExamHistoryFromServer,
@@ -24,12 +24,18 @@ export type { ExamAttempt };
  * архитектуры": UI-код вообще не пришлось трогать.
  */
 
+/**
+ * Раньше здесь был прямой supabase.auth.getSession(). Проблема: если устройство
+ * офлайн дольше времени жизни access token, getSession() вернёт null сессию
+ * (обновить токен не с чем достучаться), и все функции ниже начинали молча
+ * возвращать "пусто" — прогресс/закладки как будто пропадали, хотя IndexedDB
+ * данные никуда не делись. getEffectiveUserId() (см. lib/authCache.ts) сначала
+ * тоже пробует живую сессию, но при её отсутствии падает на последнего известного
+ * авторизованного пользователя — тот же фолбэк, что использует AuthContext, поэтому
+ * они не могут разойтись между собой.
+ */
 async function currentUserId(): Promise<string | null> {
-  // getUser() бьёт в сеть за подтверждением токена; офлайн это не нужно и не сработает —
-  // сессия и так уже восстановлена локально Supabase SDK из localStorage при старте
-  // (см. AuthContext), поэтому здесь используем локальный getSession().
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user.id ?? null;
+  return getEffectiveUserId();
 }
 
 /** Загрузить прогресс повторения по предмету (из локального кэша, с фоновым обновлением с сервера) */

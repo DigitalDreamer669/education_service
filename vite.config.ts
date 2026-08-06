@@ -35,7 +35,13 @@ export default defineConfig({
         // База — весь собранный бандл (JS/CSS/HTML) в precache, чтобы приложение
         // (включая ленивые чанки страниц — Exam/Review/Search/Topics/...) открывалось
         // и переключало маршруты полностью офлайн после первого визита.
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        // woff2 — шрифты KaTeX (формулы в вопросах/конспектах): без них Workbox не
+        // прекэшировал ни один из ~59 файлов шрифтов, и после ухода в офлайн формулы
+        // рендерились бы без глифов/с фолбэк-шрифтом. Современные Chrome/Safari всегда
+        // выбирают woff2 первым из font-face src (см. katex.min.css) — woff/ttf это
+        // фолбэк для очень старых браузеров вне текущей цели (см. ТЗ), поэтому не
+        // тащим их в прекэш, чтобы не раздувать его вдвое.
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest,woff2}'],
         // HashRouter => один и тот же index.html обслуживает все маршруты (#/subject/exam
         // и т.п.), поэтому единого navigateFallback достаточно и не требует списка роутов.
         navigateFallback: 'index.html',
@@ -61,6 +67,19 @@ export default defineConfig({
               cacheName: 'images-cache',
               cacheableResponse: { statuses: [0, 200] },
               expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 60 },
+            },
+          },
+          {
+            // Подстраховка сверх precache выше — на случай шрифтов, которые почему-то
+            // не попали в него (например, если globPatterns когда-нибудь не будет
+            // включать нужное расширение). Шрифты по хэшу в имени файла не меняются
+            // никогда, поэтому CacheFirst без риска отдать устаревшее.
+            urlPattern: ({ request }) => request.destination === 'font',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts-cache',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 365 },
             },
           },
         ],
