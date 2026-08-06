@@ -7,6 +7,7 @@ import { ProgressGraph } from '../components/ProgressGraph';
 import { useQuestions } from '../hooks/useQuestions';
 import { getSubject } from '../config/subjects';
 import { shuffle } from '../lib/parse';
+import { shouldIgnoreShortcut } from '../lib/keyboard';
 import type { Question, ExamAttempt } from '../types';
 import './Exam.css';
 
@@ -89,6 +90,42 @@ export default function Exam() {
       finishExam();
     }
   }
+
+  function goPrev() {
+    if (currentIndex > 0) setCurrentIndex((i) => i - 1);
+  }
+
+  // Горячие клавиши во время экзамена: ← / → — предыдущий/следующий вопрос
+  // (следующий работает по тем же правилам, что и кнопка — только когда
+  // текущий вопрос уже отвечен), Enter дублирует «Следующий/Завершить».
+  useEffect(() => {
+    if (phase !== 'running') return;
+    const attempt = attempts[currentIndex];
+    if (!attempt) return;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (shouldIgnoreShortcut(e)) return;
+
+      if (e.key === 'ArrowLeft') {
+        if (currentIndex > 0) {
+          e.preventDefault();
+          goPrev();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        if (attempt.result !== null) {
+          e.preventDefault();
+          goNext();
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, currentIndex, attempts]);
 
   async function handleToggleBookmark(questionId: number) {
     const ok = await import('../lib/serverProgress').then(
@@ -183,18 +220,30 @@ export default function Exam() {
           key={`${sessionKey}-${attempt.question.id}`}
           question={attempt.question}
           indexLabel={`${currentIndex + 1} / ${attempts.length}`}
+          revealed={attempt.result !== null}
+          initialSelected={attempt.selected}
           onAnswered={handleAnswered}
           isBookmarked={bookmarkedIds.includes(attempt.question.id)}
           onToggleBookmark={() => handleToggleBookmark(attempt.question.id)}
+          keyboardEnabled
         />
 
         <div className="exam-run__nav">
+          {currentIndex > 0 && (
+            <button className="btn btn--ghost" onClick={goPrev}>
+              Предыдущий
+              <span className="kbd" aria-hidden="true">←</span>
+            </button>
+          )}
           <button
             className="btn btn--primary"
             onClick={goNext}
             disabled={attempt.result === null}
           >
             {currentIndex < attempts.length - 1 ? 'Следующий вопрос' : 'Завершить экзамен'}
+            {attempt.result !== null && (
+              <span className="kbd" aria-hidden="true">Enter</span>
+            )}
           </button>
           {answeredCount < attempts.length && (
             <button className="btn btn--ghost" onClick={finishExam}>

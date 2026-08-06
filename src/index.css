@@ -152,6 +152,45 @@ button {
   color: var(--incorrect);
 }
 
+/* Значок клавиши — подсказка горячих клавиш рядом с элементами интерфейса */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text-faint);
+  background: var(--surface-2);
+  border: 1px solid var(--surface-border);
+  border-radius: 5px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.btn .kbd {
+  margin-left: 8px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.btn--primary .kbd {
+  background: rgba(15, 19, 32, 0.18);
+  border-color: rgba(15, 19, 32, 0.22);
+}
+
+/* На тач-устройствах без клавиатуры подсказки только мешают — прячем */
+@media (hover: none) and (pointer: coarse) {
+  .kbd {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

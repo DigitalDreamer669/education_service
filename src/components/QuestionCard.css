@@ -88,6 +88,10 @@
   font-size: 15px;
 }
 
+.qopt__kbd {
+  margin-left: auto;
+}
+
 .qopt--selected {
   border-color: var(--accent);
   background: var(--accent-soft);
@@ -149,6 +153,12 @@
 
 .qcard__result--skipped {
   color: var(--text-faint);
+}
+
+.qbookmark-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .qbookmark {

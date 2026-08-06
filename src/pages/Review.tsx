@@ -6,6 +6,7 @@ import { ProgressGraph } from '../components/ProgressGraph';
 import { useQuestions } from '../hooks/useQuestions';
 import { getSubject } from '../config/subjects';
 import { shuffle } from '../lib/parse';
+import { shouldIgnoreShortcut } from '../lib/keyboard';
 import type { Question, QuestionResult } from '../types';
 import './Review.css';
 
@@ -90,6 +91,48 @@ export default function Review() {
     setCurrentId(next.id);
   }
 
+  function goPrev() {
+    if (!current) return;
+    const idx = order.findIndex((q) => q.id === current.id);
+    const prev = order[(idx - 1 + order.length) % order.length];
+    setCurrentId(prev.id);
+  }
+
+  // Горячие клавиши: ← / → — предыдущий/следующий вопрос. Enter продвигает
+  // дальше, только если текущий вопрос уже отвечен — пока ответ не выбран
+  // и не проверен, Enter обрабатывает сама карточка вопроса (выбор/проверка).
+  // Это же условие делает поведение независимым от порядка срабатывания
+  // двух отдельных обработчиков keydown (страница и карточка).
+  useEffect(() => {
+    if (!current || order.length === 0) return;
+    const alreadyAnswered = progressResults[current.id] !== undefined;
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (shouldIgnoreShortcut(e)) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goPrev();
+        return;
+      }
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goNext();
+        return;
+      }
+
+      if (e.key === 'Enter' && alreadyAnswered) {
+        e.preventDefault();
+        goNext();
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current, order, progressResults]);
+
   async function handleToggleBookmark(questionId: number) {
     const ok = await import('../lib/serverProgress').then(
       ({ toggleBookmark }) => toggleBookmark(cfg.slug, questionId)
@@ -133,11 +176,17 @@ export default function Review() {
             onAnswered={handleAnswered}
             isBookmarked={bookmarkedIds.includes(current.id)}
             onToggleBookmark={() => handleToggleBookmark(current.id)}
+            keyboardEnabled
           />
 
           <div className="review-nav">
+            <button className="btn btn--ghost" onClick={goPrev}>
+              Предыдущий
+              <span className="kbd" aria-hidden="true">←</span>
+            </button>
             <button className="btn btn--primary" onClick={goNext}>
               Следующий вопрос
+              <span className="kbd" aria-hidden="true">→</span>
             </button>
             <span className="review-nav__status mono">{doneCount} / {order.length} отвечено</span>
             {doneCount > 0 && (
