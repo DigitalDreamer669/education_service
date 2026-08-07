@@ -1,5 +1,6 @@
 .layout {
-  min-height: 100vh;
+  min-height: 100vh; /* фолбэк для браузеров без dvh, см. index.css */
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -7,9 +8,18 @@
 .topbar {
   border-bottom: 1px solid var(--surface-border);
   background: rgba(15, 19, 32, 0.75);
+  /* Safari (все версии на момент написания) поддерживает backdrop-filter только
+     с префиксом -webkit- — без него блюр молча не применяется, фон остаётся
+     плоской полупрозрачной заливкой (не критично визуально, но несогласованно
+     с остальными браузерами). */
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   position: sticky;
   top: 0;
+  /* viewport-fit=cover (index.html) отдаёт контент под чёлку/статус-бар в
+     standalone-режиме (apple-mobile-web-app-status-bar-style: black-translucent) —
+     иначе логотип и кнопки в хедере оказываются под системным статус-баром. */
+  padding-top: env(safe-area-inset-top);
   z-index: 10;
   transition: transform 0.3s ease, opacity 0.3s ease;
 }

@@ -2,7 +2,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: calc(100vh - 200px);
+  min-height: calc(100vh - 200px); /* фолбэк для браузеров без dvh */
+  min-height: calc(100dvh - 200px);
 }
 
 .login__card {
@@ -54,7 +55,9 @@
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 15px;
+  /* iOS Safari автоматически зумит страницу при фокусе на инпуте с
+     вычисленным font-size < 16px — 15px здесь провоцировал именно это. */
+  font-size: 16px;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 

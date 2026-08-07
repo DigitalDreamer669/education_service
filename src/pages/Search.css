@@ -19,7 +19,8 @@
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   color: var(--text);
-  font-size: 15px;
+  /* < 16px провоцирует автозум страницы при фокусе на iOS Safari */
+  font-size: 16px;
   margin-bottom: 12px;
 }
 

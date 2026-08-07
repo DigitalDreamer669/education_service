@@ -17,6 +17,21 @@ function notify(online: boolean) {
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => notify(true));
   window.addEventListener('offline', () => notify(false));
+
+  // iOS Safari (особенно standalone PWA с домашнего экрана) может "заморозить"
+  // вкладку в фоне и не доставить пропущенные online/offline события — WebKit
+  // просто не будит документ, чтобы их обработать. Когда страница возвращается
+  // из bfcache (pageshow с persisted=true) или снова становится видимой, наш
+  // React-стейт может отставать от реального navigator.onLine до следующего
+  // "настоящего" события сети. Досверяем его в эти моменты — это не таймер и
+  // не догадка, а просто повторное чтение того же авторитетного браузерного
+  // флага, на который мы и так полагаемся.
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) notify(navigator.onLine);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') notify(navigator.onLine);
+  });
 }
 
 export function isOnline(): boolean {

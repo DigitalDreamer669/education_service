@@ -1,6 +1,8 @@
 .offline-badge {
   position: fixed;
-  bottom: 14px;
+  /* На iPhone без домашней кнопки жест возврата живёт в этой зоне — без отступа
+     бейдж перекрывался бы им (или садился прямо на него) в standalone-режиме. */
+  bottom: calc(14px + env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
