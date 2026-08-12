@@ -6,7 +6,7 @@ export const SUBJECTS: SubjectConfig[] = [
     name: 'Разработка и развитие ИТ-продуктов',
     shortName: 'ИТ-продукты',
     topicsSourceFile: 'Разработка_и_развитие_ИТ-продуктов.txt',
-    exam: { questionCount: 10, minutes: 45 },
+    exam: { questionCount: 20, minutes: 45 },
   },
   {
     slug: 'business-informatics',
