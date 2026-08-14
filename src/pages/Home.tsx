@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <Layout>
       <div className="home-hero">
-        <span className="eyebrow">Три дисциплины · один экзамен</span>
+        <span className="eyebrow">{SUBJECTS.length} дисциплин · один экзамен</span>
         <h1>Выберите предмет</h1>
         <p className="home-hero__sub">
           Тренировка вопросов, режим экзамена с таймером, поиск по базе и конспекты по темам.

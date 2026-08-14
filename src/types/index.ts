@@ -77,7 +77,10 @@ export interface TopicChunk {
 export type SubjectSlug =
   | 'it_product_development'
   | 'business-informatics'
-  | 'technology_entrepreneurship_and_it_leadership';
+  | 'technology_entrepreneurship_and_it_leadership'
+  | 'digital_transformation_technologies'
+  | 'firm_and_market_economics'
+  | 'project_program_management';
 
 export type QuestionResult = 'correct' | 'incorrect';
 

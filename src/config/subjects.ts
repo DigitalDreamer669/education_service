@@ -22,6 +22,27 @@ export const SUBJECTS: SubjectConfig[] = [
     topicsSourceFile: 'Технологическое_предпринимательство_и_лидерство_в_сфере_ІТ.txt',
     exam: { questionCount: 20, minutes: 60 },
   },
+  {
+    slug: 'digital_transformation_technologies',
+    name: 'Технологии цифровой трансформации',
+    shortName: 'Цифровая трансформация',
+    topicsSourceFile: 'Технологии_цифровой_трансформации.txt',
+    exam: { questionCount: 20, minutes: 45 },
+  },
+  {
+    slug: 'firm_and_market_economics',
+    name: 'Экономика фирмы и рынка',
+    shortName: 'Экономика фирмы',
+    topicsSourceFile: 'Экономика_фирмы_и_рынка.txt',
+    exam: { questionCount: 20, minutes: 60 },
+  },
+  {
+    slug: 'project_program_management',
+    name: 'Управление проектами и программами',
+    shortName: 'Управление проектами',
+    topicsSourceFile: 'Управление_проектами_и_программами.txt',
+    exam: { questionCount: 20, minutes: 60 },
+  },
 ];
 
 export function getSubject(slug: string | undefined): SubjectConfig | undefined {
